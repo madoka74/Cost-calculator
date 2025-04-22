@@ -1,0 +1,137 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>간단한 계산기</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f3f4f6;
+    }
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+  <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+    <h1 class="text-2xl font-bold text-center mb-6 text-gray-800">계산기</h1>
+    
+    <div class="mb-4">
+      <label for="price" class="block text-sm font-medium text-gray-700">구매가 (원)</label>
+      <input type="number" id="price" step="0.01" min="0" class="mt-1 p-2 w-full border rounded-md focus:ring-indigo-500 focus:border-indigo-500" placeholder="예: 10000" required>
+    </div>
+    
+    <div class="mb-4">
+      <label for="yield" class="block text-sm font-medium text-gray-700">수율 (%)</label>
+      <input type="number" id="yield" step="0.01" min="0.01" max="100" class="mt-1 p-2 w-full border rounded-md focus:ring-indigo-500 focus:border-indigo-500" placeholder="예: 90" required>
+    </div>
+    
+    <div class="mb-6">
+      <label for="weight" class="block text-sm font-medium text-gray-700">중량 (kg)</label>
+      <input type="number" id="weight" step="0.01" min="0" class="mt-1 p-2 w-full border rounded-md focus:ring-indigo-500 focus:border-indigo-500" placeholder="예: 10" required>
+    </div>
+    
+    <button onclick="calculate()" class="w-full bg-indigo-600 text-white p-2 rounded-md hover:bg-indigo-700 transition">계산하기</button>
+    
+    <div id="result" class="mt-6 text-center text-lg font-semibold text-gray-800"></div>
+    <div id="error" class="mt-2 text-center text-sm text-red-600 hidden"></div>
+  </div>
+
+  <script>
+    function calculate() {
+      const price = parseFloat(document.getElementById('price').value);
+      const yieldPercent = parseFloat(document.getElementById('yield').value);
+      const weight = parseFloat(document.getElementById('weight').value);
+      const resultDiv = document.getElementById('result');
+      const errorDiv = document.getElementById('error');
+
+      // 에러 메시지 초기화
+      errorDiv.classList.add('hidden');
+      resultDiv.textContent = '';
+
+      // 입력값 유효성 검사
+      if (isNaN(price) || price <= 0) {
+        showError('구매가를 올바르게 입력해주세요.');
+        return;
+      }
+      if (isNaN(yieldPercent) || yieldPercent <= 0 || yieldPercent > 100) {
+        showError('수율은 0.01%에서 100% 사이로 입력해주세요.');
+        return;
+      }
+      if (isNaN(weight) || weight <= 0) {
+        showError('중량을 올바르게 입력해주세요.');
+        return;
+      }
+
+      // 수율을 백분율로 변환 (예: 90% -> 0.9)
+      const yieldDecimal = yieldPercent / 100;
+
+      // 계산: 구매가 / 수율 * 중량 * 2 * 1.1
+      const result = (price / yieldDecimal) * weight * 2 * 1.1;
+
+      // 결과 표시 (소수점 2자리로 포맷)
+      resultDiv.textContent = `결과: ${result.toFixed(2)} 원`;
+    }
+
+    function showError(message) {
+      const errorDiv = document.getElementById('error');
+      errorDiv.textContent = message;
+      errorDiv.classList.remove('hidden');
+    }
+
+    // Enter 키로 계산 실행
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        calculate();
+      }
+    });
+  </script>
+</body>
+</html>
