@@ -88,7 +88,7 @@
     function calculate() {
       const price = parseFloat(document.getElementById('price').value);
       const yieldPercent = parseFloat(document.getElementById('yield').value);
-      const weight = parseFloat(document.getElementById('weight').value);
+      const weightGram = parseFloat(document.getElementById('weight').value);
       const resultDiv = document.getElementById('result');
       const errorDiv = document.getElementById('error');
 
@@ -105,7 +105,7 @@
         showError('수율은 0.01%에서 100% 사이로 입력해주세요.');
         return;
       }
-      if (isNaN(weight) || weight <= 0) {
+      if (isNaN(weightGram) || weightGram <= 0) {
         showError('중량을 올바르게 입력해주세요.');
         return;
       }
@@ -114,10 +114,10 @@
       const yieldDecimal = yieldPercent / 100;
 
       // 무게를 kg으로 변환 (예: 300 -> 0.3)
-      const yieldDecimal = yieldPercent / 1000;
+      const weightKilogram = weightGram / 1000;
 
       // 계산: 구매가 / 수율 * 중량 * 2 * 1.1
-      const result = (price / yieldDecimal) * weight * 2 * 1.1;
+      const result = (price / yieldDecimal) * weightKilogram * 2 * 1.1;
 
       // 결과 표시 (소수점 2자리로 포맷)
       resultDiv.textContent = `결과: ${result.toFixed(2)} 원`;
